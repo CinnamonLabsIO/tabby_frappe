@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-03 22:50:53.781835",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_id",
+  "status",
+  "payment_url",
+  "column_break_tcvv",
+  "amount",
+  "tabby_payment_id",
+  "down_payment",
+  "amended_from",
+  "section_break_nopu",
+  "monthly_installments"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Reference ID",
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nCompleted\nFailure\nRefund",
+   "read_only": 1,
+   "reqd": 1,
+   "sort_options": 1
+  },
+  {
+   "fieldname": "payment_url",
+   "fieldtype": "Data",
+   "label": "Payment Url"
+  },
+  {
+   "fieldname": "column_break_tcvv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "tabby_payment_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tabby Payment ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Tabby Payment Request",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_nopu",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "monthly_installments",
+   "fieldtype": "Table",
+   "label": "Monthly Installments",
+   "options": "Tabby Monthly Installments"
+  },
+  {
+   "fieldname": "down_payment",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Down Payment",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-03-05 12:13:16.987747",
+ "modified_by": "Administrator",
+ "module": "Tabby Frappe",
+ "name": "Tabby Payment Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

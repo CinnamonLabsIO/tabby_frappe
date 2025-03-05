@@ -1,0 +1,34 @@
+<h1>Tabby Demo</h1>
+
+<button id="init_tabby">Initiate tabby</button>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).on("click", "#init_tabby", async function () {
+        const response = await fetch("http://cl_razorpay.localhost:8004/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.initiate_checkout", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                "amount": "100",
+                "currency": "SAR",
+                "language": "en",
+                "merchant_code": "ae",
+                "buyer": {
+            "phone": "500000001", 
+            "email": "card.success@tabby.ai", 
+            "name": "string", 
+            "dob": "2019-08-24" 
+        }
+            })
+        })
+        const data = await response.json();
+        web_url = data.data.configuration.available_products.installments[0].web_url
+        window.location.href = web_url
+
+    })
+</script>

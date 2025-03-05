@@ -1,0 +1,100 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-03 11:38:56.154553",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tabby_keys_section",
+  "key_id",
+  "webhook_secret",
+  "column_break_njks",
+  "key_secret",
+  "endpoints_section",
+  "success_url",
+  "column_break_jwcn",
+  "failure_url",
+  "column_break_nmlm",
+  "cancel_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "key_id",
+   "fieldtype": "Data",
+   "label": "Key ID"
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "column_break_njks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "key_secret",
+   "fieldtype": "Password",
+   "label": "Key Secret"
+  },
+  {
+   "fieldname": "tabby_keys_section",
+   "fieldtype": "Section Break",
+   "label": "Tabby Keys"
+  },
+  {
+   "fieldname": "endpoints_section",
+   "fieldtype": "Section Break",
+   "label": "Merchant URLs"
+  },
+  {
+   "fieldname": "success_url",
+   "fieldtype": "Data",
+   "label": "Success URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "column_break_jwcn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_nmlm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cancel_url",
+   "fieldtype": "Data",
+   "label": "Cancel URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "failure_url",
+   "fieldtype": "Data",
+   "label": "Failure URL",
+   "options": "URL"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-03-04 11:20:12.465631",
+ "modified_by": "Administrator",
+ "module": "Tabby Frappe",
+ "name": "Tabby Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
