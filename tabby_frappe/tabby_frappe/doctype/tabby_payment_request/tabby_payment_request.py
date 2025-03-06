@@ -73,7 +73,7 @@ headers =  {
     'Authorization': f'Bearer {key_secret}',
     'Content-Type': 'application/json'
 }
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def initiate_checkout(amount:int,currency: str= "SAR",description:str = "",language:str="en",merchant_code:str="",buyer=""):
 	tabby_settings = frappe.get_doc('Tabby Settings')
 	payload = {
