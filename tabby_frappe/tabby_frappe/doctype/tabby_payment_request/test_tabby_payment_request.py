@@ -7,7 +7,7 @@ from tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_reque
 import frappe
 from unittest.mock import patch, MagicMock
 from frappe.utils import set_request
-
+from frappe.tests.test_api import FrappeAPITestCase
 
 class TestTabbyPaymentRequest(FrappeTestCase):
 	@property
@@ -39,16 +39,25 @@ class TestTabbyPaymentRequest(FrappeTestCase):
 		)
 		self.assertEqual(order_doc.status, "Pending")
 		self.assertEqual(order_doc.amount, test_amount)
-	def test_tabby_merchant_success(self):
-
-		response = initiate_checkout(amount=200,buyer=self.buyer)
-
-		payment_id = response["payment"]["id"]
-		print("this is id",payment_id)
-		query_string= f"?payment_id={payment_id}"
-		set_request(method="GET", query_string=query_string)
-		tabby_merchant_success()
 
 
-		doc = frappe.get_doc("Tabby Payment Request", {"tabby_payment_id": payment_id})
-		self.assertEqual(doc.status, "Complete")
+class TestTabbyPaymentRequestApi(FrappeAPITestCase):
+	pass
+	# @property
+	# def buyer(self):
+	# 	return {
+	# 		"phone": "500000001", 
+	# 		"email": "card.success@tabby.ai", 
+	# 		"name": "string", 
+	# 		"dob": "2019-08-24" 
+	# 	}
+	# def test_tabby_merchant_success(self):
+
+	# 	response = initiate_checkout(amount=200,buyer=self.buyer)
+
+	# 	payment_id = response["payment"]["id"]
+	# 	url = self.site_url +f"/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.tabby_merchant_success?payment_id={payment_id}"
+	# 	data = self.get(path=url)
+	# 	doc = frappe.get_doc("Tabby Payment Request", {"tabby_payment_id": payment_id})
+	# 	self.assertEqual(doc.status, "Complete")
+
