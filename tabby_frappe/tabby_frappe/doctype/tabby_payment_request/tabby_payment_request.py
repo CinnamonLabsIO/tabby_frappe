@@ -18,15 +18,12 @@ class TabbyPaymentRequest(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
-		from tabby_frappe.tabby_frappe.doctype.tabby_monthly_installments.tabby_monthly_installments import TabbyMonthlyInstallments
 
 		amended_from: DF.Link | None
 		amount: DF.Currency
-		down_payment: DF.Currency
-		monthly_installments: DF.Table[TabbyMonthlyInstallments]
 		payment_url: DF.Data | None
 		reference_id: DF.Data
-		status: DF.Literal["Pending", "Completed", "Faliure", "Refund"]
+		status: DF.Literal["Pending", "Completed", "Failure", "Refund"]
 		tabby_payment_id: DF.Data
 	# end: auto-generated types
 	pass

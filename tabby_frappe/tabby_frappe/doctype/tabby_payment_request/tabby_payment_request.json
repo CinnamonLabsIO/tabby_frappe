@@ -11,10 +11,7 @@
   "column_break_tcvv",
   "amount",
   "tabby_payment_id",
-  "down_payment",
-  "amended_from",
-  "section_break_nopu",
-  "monthly_installments"
+  "amended_from"
  ],
  "fields": [
   {
@@ -69,30 +66,12 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "section_break_nopu",
-   "fieldtype": "Section Break",
-   "hidden": 1
-  },
-  {
-   "fieldname": "monthly_installments",
-   "fieldtype": "Table",
-   "label": "Monthly Installments",
-   "options": "Tabby Monthly Installments"
-  },
-  {
-   "fieldname": "down_payment",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Down Payment",
-   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-05 12:13:16.987747",
+ "modified": "2025-03-06 11:40:00.546342",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Payment Request",
