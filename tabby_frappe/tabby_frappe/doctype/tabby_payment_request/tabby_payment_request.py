@@ -21,7 +21,9 @@ class TabbyPaymentRequest(Document):
 
 		amended_from: DF.Link | None
 		amount: DF.Currency
+		order_id: DF.Data | None
 		payment_url: DF.Data | None
+		quotation_id: DF.Data | None
 		reference_id: DF.Data
 		status: DF.Literal["Pending", "Completed", "Failure", "Refund"]
 		tabby_payment_id: DF.Data
@@ -77,7 +79,7 @@ headers =  {
 		'Content-Type': 'application/json'
 	}
 @frappe.whitelist(allow_guest=True)
-def initiate_checkout(amount:int,currency: str= "SAR",description:str = "",language:str="en",merchant_code:str="",buyer=""):
+def initiate_checkout(amount:int,quotation_id:str,currency: str= "SAR",description:str = "",language:str="en",merchant_code:str="",buyer=""):
 
 	payload = {
 		"payment":{
@@ -119,6 +121,7 @@ def initiate_checkout(amount:int,currency: str= "SAR",description:str = "",langu
 			"amount":checkout_data["payment"]["amount"],
 			"status":"Pending",
 			"tabby_payment_id":checkout_data["payment"]["id"],
+			"quotation_id":quotation_id,
 
 		})
 		doc.insert(ignore_permissions=True)
@@ -169,7 +172,8 @@ def tabby_merchant_success():
 	if(response_json["status"]=="AUTHORIZED" or response_json["status"]=="CLOSED"):
 
 		tabby_process_success(payment_id)
-		return werkzeug.utils.redirect(get_tabby_settings().success_url)
+		payment_request = frappe.get_doc("Tabby Payment Request",{'tabby_payment_id' :payment_id})
+		return werkzeug.utils.redirect(get_tabby_settings().success_url + payment_request.order_id)
 
 
 	else:
@@ -182,7 +186,7 @@ def tabby_merchant_failure():
 	payment_request.status = "Failure"
 	payment_request.insert(ignore_permissions=True).submit()
 	frappe.db.commit()
-	return werkzeug.utils.redirect(get_tabby_settings().success_url)
+	return werkzeug.utils.redirect(get_tabby_settings().failure_url)
 
 
 

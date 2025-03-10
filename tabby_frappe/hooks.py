@@ -144,6 +144,11 @@ app_license = "mit"
 # 		"on_trash": "method"
 # 	}
 # }
+doc_events = {
+    "Tabby Payment Request": {
+        "on_update": "sa_ecom.api.checkout.create_order_invoice"
+    }
+}
 
 # Scheduled Tasks
 # ---------------

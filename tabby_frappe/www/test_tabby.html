@@ -8,7 +8,7 @@
 
 <script>
     $(document).on("click", "#init_tabby", async function () {
-        const response = await fetch("http://cl_razorpay.localhost:8004/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.initiate_checkout", {
+        const response = await fetch("/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.initiate_checkout", {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
