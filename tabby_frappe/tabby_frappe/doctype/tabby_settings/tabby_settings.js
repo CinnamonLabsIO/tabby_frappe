@@ -11,7 +11,8 @@ frappe.ui.form.on("Tabby Settings", {
                         label: "Base URL",
                         fieldname: "base_url",
                         fieldtype: "Data",
-                        reqd: 1
+                        reqd: 1,
+                        default: `https://${frappe.boot.sitename}`
                     },
                     {
                         label: "Is Production Webhook?",
@@ -37,6 +38,6 @@ frappe.ui.form.on("Tabby Settings", {
             });
 
             d.show();
-        }).addClass("btn-primary");
+        });
     },
 });
