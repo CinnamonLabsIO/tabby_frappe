@@ -38,6 +38,6 @@ frappe.ui.form.on("Tabby Settings", {
             });
 
             d.show();
-        }).addClass("btn-primary");
+        });
     },
 });

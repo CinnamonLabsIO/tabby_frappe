@@ -35,25 +35,73 @@ class TabbyPaymentRequest(Document):
 		tabby_order_url: DF.LongText | None
 		tabby_payment_id: DF.Data | None
 	# end: auto-generated types
-	pass
+
 	@property
 	def is_complete(self):
 		return self.status == "Completed"
-	
+
 	@property
 	def tabby_settings(self):
 		return frappe.get_cached_doc('Tabby Settings')
 	@property
 	def headers(self):
+		return get_headers()
 
-		key_secret = self.tabby_settings.get_password("key_secret")
-		return {
-            "Authorization": f"Bearer {key_secret}",
-            "Content-Type": "application/json"
-        }
 	@property
-	def base_url(self):
+	def tabby_base_url(self):
 		return 'https://api.tabby.ai/'
+
+	def before_insert(self):
+		if not self.tabby_order_ref:
+			self.create_order_on_tabby()
+		
+
+	def create_order_on_tabby(self):
+		tabby_settings =  frappe.get_cached_doc('Tabby Settings')
+		address = None
+		if self.customer_address:
+			address_doc = frappe.get_cached_doc("Address", self.customer_address)
+			address = {
+				"address": address_doc.address_line1,
+				"city": address_doc.city,
+				"zip": address_doc.pincode,
+			}
+		buyer ={
+			"phone": self.customer_phone or "",
+			"email": self.customer_email or "",
+			"name": self.customer_name or "",
+			"dob": self.customer_dob or ""
+		}
+
+		checkout_data = tabby_settings.create_session(
+			amount=self.amount,
+			reference_id=str(self.name),
+			currency_code=self.currency_code,
+			buyer=buyer,
+			address = address
+		)
+
+		self.tabby_order_url = checkout_data["configuration"]["available_products"]["installments"][0]["web_url"]
+		self.tabby_order_ref = checkout_data['id']
+		self.tabby_payment_id = checkout_data["payment"]["id"]
+		self.status = checkout_data["status"].upper()
+
+
+
+	@frappe.whitelist()
+	def sync_status(self):
+		response = self.tabby_settings.get_order_status(self.tabby_payment_id)
+		status = response['status']
+		self.status = status
+		self.save()
+
+	@frappe.whitelist()
+	def capture_payment(self):
+
+		response = self.tabby_settings.capture_payment(self.tabby_payment_id,self.amount)
+		status = response['status']
+		self.status = status
+		self.save()
 
 	def before_insert(self):
 		if not self.tabby_order_ref:
@@ -113,12 +161,20 @@ class TabbyPaymentRequest(Document):
 
 		if not self.is_complete:
 			frappe.throw("Refunds Can be Made Only on Complete Payments!")
-		url = self.base_url + f"api/v2/payments/{self.tabby_payment_id}/refunds"
-		response = requests.post(url,headers=self.headers,json={"amount":self.amount})
-		status = "Completed" if response.status_code ==200 else "Failed"
-		create_request_log(data={"payment_id":self.tabby_payment_id,"amount":self.amount},service_name="Tabby Refund",output=response.json(),status=status,request_headers=response.headers)
-		if status=="Completed":
-			self.status="Refund"
+		url = self.tabby_base_url + f"api/v2/payments/{self.tabby_payment_id}/refunds"
+		response = requests.post(
+			url, headers=self.headers, json={"amount": self.amount}
+		)
+		status = "Completed" if response.status_code == 200 else "Failed"
+		create_request_log(
+			data={"payment_id": self.tabby_payment_id, "amount": self.amount},
+			service_name="Tabby Refund",
+			output=response.json(),
+			status=status,
+			request_headers=response.headers,
+		)
+		if status == "Completed":
+			self.status = "Refund"
 			self.save()
 			return "refund successful"
 		else:
