@@ -144,11 +144,11 @@ app_license = "mit"
 # 		"on_trash": "method"
 # 	}
 # }
-doc_events = {
-    "Tabby Payment Request": {
-        "on_update": "sa_ecom.api.checkout.create_order_invoice"
-    }
-}
+# doc_events = {
+#     "Tabby Payment Request": {
+#         "on_update": "sa_ecom.api.checkout.create_order_invoice"
+#     }
+# }
 
 # Scheduled Tasks
 # ---------------
@@ -246,4 +246,3 @@ export_python_type_annotations = True
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
