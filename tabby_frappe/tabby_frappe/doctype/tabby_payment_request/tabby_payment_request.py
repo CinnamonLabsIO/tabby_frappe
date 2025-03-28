@@ -2,15 +2,12 @@
 # For license information, please see license.txt
 
 
-from frappe.model.document import Document
 import frappe
-from frappe.integrations.utils import create_request_log, make_get_request
 import requests
-import werkzeug.utils
-from frappe.utils import get_url
-
-
-TABBY_API_BASE_URL = "https://api.tabby.ai/"
+from frappe.integrations.utils import (
+	create_request_log,
+)
+from frappe.model.document import Document
 
 
 class TabbyPaymentRequest(Document):
@@ -24,12 +21,28 @@ class TabbyPaymentRequest(Document):
 
 		amended_from: DF.Link | None
 		amount: DF.Currency
-		order_id: DF.Data | None
-		payment_url: DF.Data | None
-		quotation_id: DF.Data | None
-		reference_id: DF.Data
-		status: DF.Literal["Pending", "Completed", "Failure", "Refund"]
-		tabby_payment_id: DF.Data
+		currency_code: DF.Link | None
+		customer_address: DF.Data | None
+		customer_dob: DF.Data | None
+		customer_email: DF.Data | None
+		customer_name: DF.Data | None
+		customer_phone: DF.Data | None
+		customer_reference: DF.Data | None
+		ref_docname: DF.DynamicLink | None
+		ref_doctype: DF.Link | None
+		status: DF.Literal[
+			"PENDING",
+			"CREATED",
+			"AUTHORIZED",
+			"CLOSED",
+			"REJECTED",
+			"EXPIRED",
+			"FAILURE",
+			"REFUND",
+		]
+		tabby_order_ref: DF.Data | None
+		tabby_order_url: DF.LongText | None
+		tabby_payment_id: DF.Data | None
 	# end: auto-generated types
 
 	@property
@@ -38,15 +51,71 @@ class TabbyPaymentRequest(Document):
 
 	@property
 	def tabby_settings(self):
-		return get_tabby_settings()
+		return frappe.get_cached_doc("Tabby Settings")
 
 	@property
 	def headers(self):
-		return get_headers()
+		key_secret = self.tabby_settings.get_password("key_secret")
+		return {
+			"Authorization": f"Bearer {key_secret}",
+			"Content-Type": "application/json",
+		}
 
 	@property
 	def tabby_base_url(self):
-		return TABBY_API_BASE_URL
+		return "https://api.tabby.ai/"
+
+	def before_insert(self):
+		if not self.tabby_order_ref:
+			self.create_order_on_tabby()
+
+	def create_order_on_tabby(self):
+		tabby_settings = frappe.get_cached_doc("Tabby Settings")
+		address = None
+		if self.customer_address:
+			address_doc = frappe.get_cached_doc("Address", self.customer_address)
+			address = {
+				"address": address_doc.address_line1,
+				"city": address_doc.city,
+				"zip": address_doc.pincode,
+			}
+		buyer = {
+			"phone": self.customer_phone or "",
+			"email": self.customer_email or "",
+			"name": self.customer_name or "",
+			"dob": self.customer_dob or "",
+		}
+
+		checkout_data = tabby_settings.create_session(
+			amount=self.amount,
+			reference_id=str(self.name),
+			currency_code=self.currency_code,
+			buyer=buyer,
+			address=address,
+		)
+
+		self.tabby_order_url = checkout_data["configuration"]["available_products"][
+			"installments"
+		][0]["web_url"]
+		self.tabby_order_ref = checkout_data["id"]
+		self.tabby_payment_id = checkout_data["payment"]["id"]
+		self.status = checkout_data["status"].upper()
+
+	@frappe.whitelist()
+	def capture_payment(self):
+		response = self.tabby_settings.capture_payment(
+			self.tabby_payment_id, self.amount
+		)
+		status = response["status"]
+		self.status = status
+		self.save()
+
+	@frappe.whitelist()
+	def sync_status(self):
+		response = self.tabby_settings.get_order_status(self.tabby_payment_id)
+		status = response["status"]
+		self.status = status
+		self.save()
 
 	@frappe.whitelist()
 	def refund(self):
@@ -74,185 +143,11 @@ class TabbyPaymentRequest(Document):
 			frappe.throw("Could not process refund, please try again later.")
 
 
-def get_tabby_settings():
-	return frappe.get_cached_doc("Tabby Settings")
+# Todo implement webhook
+# @frappe.whitelist(allow_guest=True)
+# def process_tabby_webhook():
+# 	data = frappe.request.get_json()
+# 	if data["status"] == "authorized":
+# 		tabby_process_success(data["id"])
 
-
-def get_headers():
-	return {
-		"Authorization": f'Bearer {get_tabby_settings().get_password("key_secret")}',
-		"Content-Type": "application/json",
-	}
-
-
-@frappe.whitelist()
-def initiate_checkout(
-	amount: int,
-	quotation_id: str,
-	currency: str = "SAR",
-	description: str = "",
-	language: str = "en",
-	merchant_code: str = "",
-	buyer="",
-):
-	payload = {
-		"payment": {
-			"amount": amount,
-			"currency": currency,
-			"description": description,
-			"buyer": buyer,
-		},
-		"lang": language,
-		"merchant_code": merchant_code,
-		"merchant_urls": {
-			"success": get_url(
-				"/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.tabby_merchant_success"
-			),
-			"cancel": get_tabby_settings().cancel_url,
-			"failure": get_url(
-				"/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.tabby_merchant_failure"
-			),
-		},
-	}
-	response = requests.post(
-		TABBY_API_BASE_URL + "api/v2/checkout", headers=get_headers(), json=payload
-	)
-	response_status = "Completed" if response.status_code == 200 else "Failed"
-
-	create_request_log(
-		data=payload,
-		service_name="Tabby Checkout",
-		output=response.json(),
-		status=response_status,
-		request_headers=response.headers,
-	)
-	# This is just a log can be removed
-	frappe.get_doc(
-		{
-			"doctype": "Tabby Payment Log",
-			"request_data": frappe.as_json(payload, indent=2),
-			"response_data": frappe.as_json(response.json(), indent=2),
-			"status": "Success" if response.status_code == 200 else "Error",
-		}
-	).insert(ignore_permissions=True)
-
-	# Check the response
-	if response.status_code == 200:
-		checkout_data = response.json()
-		doc = frappe.get_doc(
-			{
-				"doctype": "Tabby Payment Request",
-				"reference_id": checkout_data["id"],
-				"amount": checkout_data["payment"]["amount"],
-				"status": "Pending",
-				"tabby_payment_id": checkout_data["payment"]["id"],
-				"quotation_id": quotation_id,
-			}
-		)
-		doc.insert(ignore_permissions=True)
-		return {
-			"web_url": checkout_data["configuration"]["available_products"][
-				"installments"
-			][0]["web_url"]
-		}
-	else:
-		frappe.throw(
-			f"Tabby Payment Error: Cannot create payment request, Error: {response.text}"
-		)
-
-
-def tabby_process_success(payment_id: str):
-	payment_request = frappe.get_doc(
-		"Tabby Payment Request", {"tabby_payment_id": payment_id}
-	)
-
-	if payment_request.status != "Completed":
-		# Check if the payment is already captured
-		payment_response = requests.get(
-			TABBY_API_BASE_URL + f"api/v2/payments/{payment_id}", headers=get_headers()
-		)
-		payment_response_json = payment_response.json()
-		if (
-			payment_response_json["status"] == "CLOSED"
-			or payment_request.status == "Completed"
-		):
-			return
-		
-		# capture the payment
-		url = TABBY_API_BASE_URL + f"api/v2/payments/{payment_id}/captures"
-		payload = {"amount": payment_request.amount}
-		response = requests.post(url, headers=get_headers(), json=payload)
-		response_status = "Completed" if response.status_code == 200 else "Failed"
-		create_request_log(
-			data=payload,
-			service_name="Tabby Integration Payment Capture",
-			output=response.json(),
-			status=response_status,
-			request_headers=response.headers,
-		)
-		if response_status == "Completed":
-			payment_request.status = "Completed"
-			payment_request.save(ignore_permissions=True).submit()
-		else:
-			frappe.throw("Tabby payment error: Failed to capture payment")
-
-
-@frappe.whitelist()
-def tabby_merchant_success():
-	payment_id = frappe.form_dict.get("payment_id")
-
-	url = TABBY_API_BASE_URL + f"api/v2/payments/{payment_id}"
-	response = requests.get(url, headers=get_headers())
-	response_data = response.json()
-	response_status = "Completed" if response.status_code == 200 else "Failed"
-	create_request_log(
-		data={},
-		service_name="Tabby Integration Success",
-		output=response.json(),
-		status=response_status,
-		request_headers=response.headers,
-	)
-	if response_data["status"] == "AUTHORIZED" or response_data["status"] == "CLOSED":
-		tabby_process_success(payment_id)
-		payment_request = frappe.get_doc(
-			"Tabby Payment Request", {"tabby_payment_id": payment_id}
-		)
-		return werkzeug.utils.redirect(
-			get_tabby_settings().success_url + payment_request.order_id
-		)
-	else:
-		frappe.throw("Something went wrong.")
-
-
-@frappe.whitelist()
-def tabby_merchant_failure():
-	payment_id = frappe.request.args.get("payment_id")
-	payment_request = frappe.get_doc(
-		"Tabby Payment Request", {"tabby_payment_id": payment_id}
-	)
-	payment_request.status = "Failure"
-	payment_request.insert(ignore_permissions=True).submit()
-	frappe.db.commit()
-	return werkzeug.utils.redirect(get_tabby_settings().failure_url)
-
-
-TABBY_WHITELISTED_IP_ADDRESSES = {
-	"34.166.36.90",
-	"34.166.35.211",
-	"34.166.34.222",
-	"34.166.37.207",
-	"34.93.76.191",
-}
-
-
-@frappe.whitelist(allow_guest=True)
-def process_tabby_webhook():
-	request_ip = frappe.request.headers.get("X-Real-Ip")
-	if request_ip not in TABBY_WHITELISTED_IP_ADDRESSES:
-		frappe.throw("Unauthorized request.", 417)
-
-	data = frappe.request.get_json()
-	if data["status"] == "authorized":
-		tabby_process_success(data["id"])
-
-	return "ok"
+# 	return Response(status=200)

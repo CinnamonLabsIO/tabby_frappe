@@ -5,40 +5,40 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "reference_id",
+  "tabby_order_ref",
   "status",
-  "payment_url",
-  "amended_from",
+  "tabby_order_url",
   "column_break_tcvv",
-  "amount",
   "tabby_payment_id",
-  "quotation_id",
-  "order_id"
+  "amended_from",
+  "amount_section",
+  "amount",
+  "column_break_ilqi",
+  "currency_code",
+  "customer_details_section",
+  "customer_reference",
+  "customer_phone",
+  "customer_name",
+  "column_break_durx",
+  "customer_email",
+  "customer_address",
+  "customer_dob",
+  "reference_section",
+  "ref_doctype",
+  "column_break_lrmw",
+  "ref_docname"
  ],
  "fields": [
   {
-   "fieldname": "reference_id",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Reference ID",
-   "reqd": 1
-  },
-  {
    "allow_on_submit": 1,
-   "default": "Pending",
+   "default": "PENDING",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nCompleted\nFailure\nRefund",
+   "options": "PENDING\nCREATED\nAUTHORIZED\nCLOSED\nREJECTED\nEXPIRED\nFAILURE\nREFUND",
    "read_only": 1,
-   "reqd": 1,
    "sort_options": 1
-  },
-  {
-   "fieldname": "payment_url",
-   "fieldtype": "Data",
-   "label": "Payment Url"
   },
   {
    "fieldname": "column_break_tcvv",
@@ -57,7 +57,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Tabby Payment ID",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -70,20 +70,98 @@
    "search_index": 1
   },
   {
-   "fieldname": "quotation_id",
-   "fieldtype": "Data",
-   "label": "Quotation ID"
+   "fieldname": "amount_section",
+   "fieldtype": "Section Break",
+   "label": "Amount"
   },
   {
-   "fieldname": "order_id",
+   "fieldname": "column_break_ilqi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "currency_code",
+   "fieldtype": "Link",
+   "label": "Currency Code",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "customer_details_section",
+   "fieldtype": "Section Break",
+   "label": "Customer Details"
+  },
+  {
+   "fieldname": "customer_reference",
    "fieldtype": "Data",
-   "label": "Order ID"
+   "label": "Customer Reference"
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "label": "Customer Phone"
+  },
+  {
+   "fieldname": "column_break_durx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Customer Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "customer_address",
+   "fieldtype": "Data",
+   "label": "Customer Address"
+  },
+  {
+   "fieldname": "reference_section",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "column_break_lrmw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ref_docname",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "ref_doctype"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name"
+  },
+  {
+   "fieldname": "customer_dob",
+   "fieldtype": "Data",
+   "label": "Customer DOB"
+  },
+  {
+   "fieldname": "tabby_order_url",
+   "fieldtype": "Long Text",
+   "label": "Tabby Order Url",
+   "options": "URL"
+  },
+  {
+   "fieldname": "tabby_order_ref",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tabby Order Ref",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
  "links": [],
- "modified": "2025-03-09 15:01:59.132961",
+ "modified": "2025-03-28 16:29:09.718392",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Payment Request",
