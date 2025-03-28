@@ -10,12 +10,12 @@
 frappe.ui.form.on("Tabby Payment Request", {
 	refresh(frm) {
 		if (frm.doc.status === "CLOSED") {
-			frm.add_custom_button("Refund", () => {
+			frm.add_custom_button(_('Refund'), () => {
      
                 frappe.confirm("Are you sure you want to refund in full?", () => {
 					frm.call("refund").then(({ message }) => {
 						if (message != "failed") {
-							frappe.show_alert("Refund Processed");
+							frappe.show_alert(_("Refund Processed"));
 							frm.refresh();
 						}
 					});

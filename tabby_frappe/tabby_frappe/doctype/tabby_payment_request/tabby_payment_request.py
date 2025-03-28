@@ -2,14 +2,14 @@
 # For license information, please see license.txt
 
 
-from frappe.model.document import Document
 import frappe
 import requests
 from frappe.integrations.utils import (
 	create_request_log,
-	make_get_request,
-	make_post_request,
 )
+from frappe.model.document import Document
+
+
 class TabbyPaymentRequest(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
@@ -30,7 +30,16 @@ class TabbyPaymentRequest(Document):
 		customer_reference: DF.Data | None
 		ref_docname: DF.DynamicLink | None
 		ref_doctype: DF.Link | None
-		status: DF.Literal["PENDING", "CREATED", "AUTHORIZED", "CLOSED", "REJECTED", "EXPIRED", "FAILURE", "REFUND"]
+		status: DF.Literal[
+			"PENDING",
+			"CREATED",
+			"AUTHORIZED",
+			"CLOSED",
+			"REJECTED",
+			"EXPIRED",
+			"FAILURE",
+			"REFUND",
+		]
 		tabby_order_ref: DF.Data | None
 		tabby_order_url: DF.LongText | None
 		tabby_payment_id: DF.Data | None
@@ -42,22 +51,26 @@ class TabbyPaymentRequest(Document):
 
 	@property
 	def tabby_settings(self):
-		return frappe.get_cached_doc('Tabby Settings')
+		return frappe.get_cached_doc("Tabby Settings")
+
 	@property
 	def headers(self):
-		return get_headers()
+		key_secret = self.tabby_settings.get_password("key_secret")
+		return {
+			"Authorization": f"Bearer {key_secret}",
+			"Content-Type": "application/json",
+		}
 
 	@property
 	def tabby_base_url(self):
-		return 'https://api.tabby.ai/'
+		return "https://api.tabby.ai/"
 
 	def before_insert(self):
 		if not self.tabby_order_ref:
 			self.create_order_on_tabby()
-		
 
 	def create_order_on_tabby(self):
-		tabby_settings =  frappe.get_cached_doc('Tabby Settings')
+		tabby_settings = frappe.get_cached_doc("Tabby Settings")
 		address = None
 		if self.customer_address:
 			address_doc = frappe.get_cached_doc("Address", self.customer_address)
@@ -66,11 +79,11 @@ class TabbyPaymentRequest(Document):
 				"city": address_doc.city,
 				"zip": address_doc.pincode,
 			}
-		buyer ={
+		buyer = {
 			"phone": self.customer_phone or "",
 			"email": self.customer_email or "",
 			"name": self.customer_name or "",
-			"dob": self.customer_dob or ""
+			"dob": self.customer_dob or "",
 		}
 
 		checkout_data = tabby_settings.create_session(
@@ -78,80 +91,29 @@ class TabbyPaymentRequest(Document):
 			reference_id=str(self.name),
 			currency_code=self.currency_code,
 			buyer=buyer,
-			address = address
+			address=address,
 		)
 
-		self.tabby_order_url = checkout_data["configuration"]["available_products"]["installments"][0]["web_url"]
-		self.tabby_order_ref = checkout_data['id']
+		self.tabby_order_url = checkout_data["configuration"]["available_products"][
+			"installments"
+		][0]["web_url"]
+		self.tabby_order_ref = checkout_data["id"]
 		self.tabby_payment_id = checkout_data["payment"]["id"]
 		self.status = checkout_data["status"].upper()
 
-
+	@frappe.whitelist()
+	def capture_payment(self):
+		response = self.tabby_settings.capture_payment(
+			self.tabby_payment_id, self.amount
+		)
+		status = response["status"]
+		self.status = status
+		self.save()
 
 	@frappe.whitelist()
 	def sync_status(self):
 		response = self.tabby_settings.get_order_status(self.tabby_payment_id)
-		status = response['status']
-		self.status = status
-		self.save()
-
-	@frappe.whitelist()
-	def capture_payment(self):
-
-		response = self.tabby_settings.capture_payment(self.tabby_payment_id,self.amount)
-		status = response['status']
-		self.status = status
-		self.save()
-
-	def before_insert(self):
-		if not self.tabby_order_ref:
-			self.create_order_on_tabby()
-		
-
-	def create_order_on_tabby(self):
-		tabby_settings =  frappe.get_cached_doc('Tabby Settings')
-		address = None
-		if self.customer_address:
-			address_doc = frappe.get_cached_doc("Address", self.customer_address)
-			address = {
-				"address": address_doc.address_line1,
-				"city": address_doc.city,
-				"zip": address_doc.pincode,
-			}
-		buyer ={
-			"phone": self.customer_phone or "",
-			"email": self.customer_email or "",
-			"name": self.customer_name or "",
-			"dob": self.customer_dob or ""
-		}
-
-		checkout_data = tabby_settings.create_session(
-			amount=self.amount,
-			reference_id=str(self.name),
-			currency_code=self.currency_code,
-			buyer=buyer,
-			address = address
-		)
-
-		self.tabby_order_url = checkout_data["configuration"]["available_products"]["installments"][0]["web_url"]
-		self.tabby_order_ref = checkout_data['id']
-		self.tabby_payment_id = checkout_data["payment"]["id"]
-		self.status = checkout_data["status"].upper()
-
-
-
-	@frappe.whitelist()
-	def sync_status(self):
-		response = self.tabby_settings.get_order_status(self.tabby_payment_id)
-		status = response['status']
-		self.status = status
-		self.save()
-
-	@frappe.whitelist()
-	def capture_payment(self):
-
-		response = self.tabby_settings.capture_payment(self.tabby_payment_id,self.amount)
-		status = response['status']
+		status = response["status"]
 		self.status = status
 		self.save()
 
@@ -180,13 +142,12 @@ class TabbyPaymentRequest(Document):
 		else:
 			frappe.throw("Could not process refund, please try again later.")
 
+
 # Todo implement webhook
 # @frappe.whitelist(allow_guest=True)
 # def process_tabby_webhook():
 # 	data = frappe.request.get_json()
 # 	if data["status"] == "authorized":
-# 		tabby_process_success(data["id"])  
-	
+# 		tabby_process_success(data["id"])
+
 # 	return Response(status=200)
-
-
