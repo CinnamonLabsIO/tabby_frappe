@@ -35,12 +35,8 @@ class TabbySettings(Document):
 		return "https://api.tabby.ai/"
 
 	@property
-	def tabby_settings(self):
-		return frappe.get_cached_doc("Tabby Settings")
-
-	@property
 	def headers(self):
-		key_secret = self.tabby_settings.get_password("key_secret")
+		key_secret = self.get_password("key_secret")
 		return {
 			"Authorization": f"Bearer {key_secret}",
 			"Content-Type": "application/json",
@@ -55,7 +51,6 @@ class TabbySettings(Document):
 		buyer: dict | None = None,
 		address: dict | None = None,
 	):
-		tabby_settings = self.tabby_settings
 		payload = {
 			"payment": {
 				"amount": amount,
@@ -69,9 +64,9 @@ class TabbySettings(Document):
 			"lang": frappe.local.lang,
 			"merchant_code": "",
 			"merchant_urls": {
-				"success": tabby_settings.success_url,
-				"cancel": tabby_settings.cancel_url,
-				"failure": tabby_settings.failure_url,
+				"success": self.success_url,
+				"cancel": self.cancel_url,
+				"failure": self.failure_url,
 			},
 		}
 		endpoint = f"{self.base_url}api/v2/checkout"
@@ -90,9 +85,7 @@ class TabbySettings(Document):
 	@frappe.whitelist()
 	def get_order_status(self, payment_id: str):
 		endpoint = f"{self.base_url}api/v2/payments/{payment_id}"
-		key_secret = self.tabby_settings.get_password("key_secret")
-		headers = {"Authorization": f"Bearer {key_secret}"}
-		response = make_get_request(endpoint, headers=headers)
+		response = make_get_request(endpoint, headers=self.headers)
 		return response
 
 	@frappe.whitelist()
@@ -125,6 +118,32 @@ class TabbySettings(Document):
 			return "Webhook Registered"
 		else:
 			frappe.throw(response.json()["error"])
+
+	def refund_payment(self, payment_id: str, amount: float):
+		url = f"{self.base_url}api/v2/payments/{payment_id}/refunds"
+		data = {"amount": amount}
+
+		try:
+			response = make_post_request(
+				url, headers=self.headers, json=data
+			)
+			create_request_log(
+				data=data,
+				service_name="Tabby",
+				output=response.json(),
+				status="Completed",
+				request_headers=self.headers,
+			)
+			return response
+		except Exception as e:
+			create_request_log(
+				data=data,
+				service_name="Tabby",
+				status="Failed",
+				request_headers=self.headers,
+				error=e
+			)
+			raise
 
 
 def create_tabby_request_log(

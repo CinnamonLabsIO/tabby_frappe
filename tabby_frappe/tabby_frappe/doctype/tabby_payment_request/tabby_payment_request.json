@@ -26,7 +26,11 @@
   "reference_section",
   "ref_doctype",
   "column_break_lrmw",
-  "ref_docname"
+  "ref_docname",
+  "refunds_section",
+  "refund_id",
+  "column_break_djme",
+  "refunded_at"
  ],
  "fields": [
   {
@@ -50,7 +54,8 @@
    "in_list_view": 1,
    "label": "Amount",
    "non_negative": 1,
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "tabby_payment_id",
@@ -79,10 +84,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "SAR",
    "fieldname": "currency_code",
    "fieldtype": "Link",
    "label": "Currency Code",
-   "options": "Currency"
+   "options": "Currency",
+   "set_only_once": 1
   },
   {
    "fieldname": "customer_details_section",
@@ -149,7 +156,8 @@
    "fieldname": "tabby_order_url",
    "fieldtype": "Long Text",
    "label": "Tabby Order Url",
-   "options": "URL"
+   "options": "URL",
+   "set_only_once": 1
   },
   {
    "fieldname": "tabby_order_ref",
@@ -157,11 +165,33 @@
    "in_list_view": 1,
    "label": "Tabby Order Ref",
    "read_only": 1
+  },
+  {
+   "fieldname": "refunds_section",
+   "fieldtype": "Section Break",
+   "label": "Refunds"
+  },
+  {
+   "fieldname": "refund_id",
+   "fieldtype": "Data",
+   "label": "Refund ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_djme",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "refunded_at",
+   "fieldtype": "Datetime",
+   "label": "Refunded At",
+   "read_only": 1
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-28 16:29:09.718392",
+ "modified": "2025-04-19 16:27:49.929914",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Payment Request",
@@ -180,7 +210,26 @@
    "write": 1
   }
  ],
+ "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Yellow",
+   "title": "CREATED"
+  },
+  {
+   "color": "Green",
+   "title": "CLOSED"
+  },
+  {
+   "color": "Purple",
+   "title": "REFUND"
+  },
+  {
+   "color": "Red",
+   "title": "REJECTED"
+  }
+ ]
 }
