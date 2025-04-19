@@ -130,7 +130,7 @@ class TabbySettings(Document):
 			create_request_log(
 				data=data,
 				service_name="Tabby",
-				output=response.json(),
+				output=response,
 				status="Completed",
 				request_headers=self.headers,
 			)

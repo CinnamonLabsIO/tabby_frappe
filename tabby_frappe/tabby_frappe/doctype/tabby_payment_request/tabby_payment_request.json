@@ -164,7 +164,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Tabby Order Ref",
-   "read_only": 1
+   "read_only": 1,
+   "unique": 1
   },
   {
    "fieldname": "refunds_section",
@@ -191,7 +192,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-19 16:27:49.929914",
+ "modified": "2025-04-19 16:58:09.694243",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Payment Request",

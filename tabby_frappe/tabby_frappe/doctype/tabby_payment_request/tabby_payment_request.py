@@ -135,3 +135,10 @@ class TabbyPaymentRequest(Document):
 # 		tabby_process_success(data["id"])
 
 # 	return Response(status=200)
+
+
+def refund_payment_for_payment_entry(doc, event=None):
+	if doc.mode_of_payment != "Tabby":
+		return
+
+	frappe.get_doc("Tabby Payment Request", {"tabby_order_ref": doc.reference_no}).refund()
