@@ -64,9 +64,9 @@ class TabbySettings(Document):
 			"lang": frappe.local.lang,
 			"merchant_code": "",
 			"merchant_urls": {
-				"success": self.success_url,
-				"cancel": self.cancel_url,
-				"failure": self.failure_url,
+				"success": get_local_lang_url(self.success_url),
+				"cancel": get_local_lang_url(self.cancel_url),
+				"failure": get_local_lang_url(self.failure_url),
 			},
 		}
 		endpoint = f"{self.base_url}api/v2/checkout"
@@ -161,3 +161,12 @@ def create_tabby_request_log(
 		error=error,
 		status="Failed" if error else "Completed",
 	)
+
+def get_local_lang_url(url: str) -> str:
+	if "/ar/" in url and frappe.local.lang == "en":
+		return url.replace("/ar/", "/en/")
+
+	if "/en/" in url and frappe.local.lang == "ar":
+		return url.replace("/en/", "/ar/")
+
+	return url
