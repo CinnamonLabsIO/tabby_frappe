@@ -124,9 +124,7 @@ class TabbySettings(Document):
 		data = {"amount": amount}
 
 		try:
-			response = make_post_request(
-				url, headers=self.headers, json=data
-			)
+			response = make_post_request(url, headers=self.headers, json=data)
 			create_request_log(
 				data=data,
 				service_name="Tabby",
@@ -141,7 +139,7 @@ class TabbySettings(Document):
 				service_name="Tabby",
 				status="Failed",
 				request_headers=self.headers,
-				error=e
+				error=e,
 			)
 			raise
 
@@ -161,6 +159,7 @@ def create_tabby_request_log(
 		error=error,
 		status="Failed" if error else "Completed",
 	)
+
 
 def get_local_lang_url(url: str) -> str:
 	if "/ar/" in url and frappe.local.lang == "en":

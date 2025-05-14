@@ -28,7 +28,16 @@ class TabbyPaymentRequest(Document):
 		ref_doctype: DF.Link | None
 		refund_id: DF.Data | None
 		refunded_at: DF.Datetime | None
-		status: DF.Literal["PENDING", "CREATED", "AUTHORIZED", "CLOSED", "REJECTED", "EXPIRED", "FAILURE", "REFUND"]
+		status: DF.Literal[
+			"PENDING",
+			"CREATED",
+			"AUTHORIZED",
+			"CLOSED",
+			"REJECTED",
+			"EXPIRED",
+			"FAILURE",
+			"REFUND",
+		]
 		tabby_order_ref: DF.Data | None
 		tabby_order_url: DF.LongText | None
 		tabby_payment_id: DF.Data | None
@@ -93,7 +102,7 @@ class TabbyPaymentRequest(Document):
 		)
 		status = response["status"]
 		self.status = status
-		self.save()
+		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def sync_status(self):
@@ -104,14 +113,16 @@ class TabbyPaymentRequest(Document):
 
 		if response.get("refunds", []):
 			self.refund_id = response["refunds"][0]["id"]
-			self.refunded_at = frappe.utils.get_datetime_str(response["refunds"][0]["created_at"])
+			self.refunded_at = frappe.utils.get_datetime_str(
+				response["refunds"][0]["created_at"]
+			)
 			self.status = "REFUND"
 
-		self.save()
+		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def refund(self):
-		frappe.only_for("System Manager")
+		# frappe.only_for("System Manager")
 
 		if self.status != "CLOSED":
 			frappe.throw(frappe._("Refunds can be made only on completed payments!"))
@@ -122,9 +133,11 @@ class TabbyPaymentRequest(Document):
 
 		if len(response.get("refunds", [])):
 			self.refund_id = response["refunds"][0]["id"]
-			self.refunded_at = frappe.utils.get_datetime_str(response["refunds"][0]["created_at"])
+			self.refunded_at = frappe.utils.get_datetime_str(
+				response["refunds"][0]["created_at"]
+			)
 			self.status = "REFUND"
-			self.save()
+			self.save(ignore_permissions=True)
 
 
 # Todo implement webhook
@@ -141,4 +154,6 @@ def refund_payment_for_payment_entry(doc, event=None):
 	if doc.mode_of_payment != "Tabby":
 		return
 
-	frappe.get_doc("Tabby Payment Request", {"tabby_order_ref": doc.reference_no}).refund()
+	frappe.get_doc(
+		"Tabby Payment Request", {"tabby_order_ref": doc.reference_no}
+	).refund()
