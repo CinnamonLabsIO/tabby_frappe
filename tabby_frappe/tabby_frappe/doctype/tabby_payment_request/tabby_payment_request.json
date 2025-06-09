@@ -15,6 +15,11 @@
   "amount",
   "column_break_ilqi",
   "currency_code",
+  "refunds_section",
+  "refund_id",
+  "refund_amount",
+  "column_break_djme",
+  "refunded_at",
   "customer_details_section",
   "customer_reference",
   "customer_phone",
@@ -26,11 +31,7 @@
   "reference_section",
   "ref_doctype",
   "column_break_lrmw",
-  "ref_docname",
-  "refunds_section",
-  "refund_id",
-  "column_break_djme",
-  "refunded_at"
+  "ref_docname"
  ],
  "fields": [
   {
@@ -40,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "PENDING\nCREATED\nAUTHORIZED\nCLOSED\nREJECTED\nEXPIRED\nFAILURE\nREFUND",
+   "options": "PENDING\nCREATED\nAUTHORIZED\nCLOSED\nREJECTED\nEXPIRED\nFAILURE\nPARTIAL REFUND\nREFUND",
    "read_only": 1,
    "sort_options": 1
   },
@@ -187,12 +188,19 @@
    "fieldtype": "Datetime",
    "label": "Refunded At",
    "read_only": 1
+  },
+  {
+   "fieldname": "refund_amount",
+   "fieldtype": "Currency",
+   "label": "Refund Amount",
+   "non_negative": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-19 16:58:09.694243",
+ "modified": "2025-06-09 07:58:46.668257",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Payment Request",
@@ -231,6 +239,10 @@
   {
    "color": "Red",
    "title": "REJECTED"
+  },
+  {
+   "color": "Purple",
+   "title": "PARTIAL REFUND"
   }
  ]
 }

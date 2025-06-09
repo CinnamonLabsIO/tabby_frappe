@@ -112,7 +112,7 @@ class TabbySettings(Document):
 			service_name="Tabby Webhook",
 			output=response.json(),
 			status=response_status,
-			request_headers=response.headers,
+			request_headers=self.headers,
 		)
 		if response_status == "Completed":
 			return "Webhook Registered"
