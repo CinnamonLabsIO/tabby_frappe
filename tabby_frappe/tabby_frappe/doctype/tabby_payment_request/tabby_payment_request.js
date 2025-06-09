@@ -1,6 +1,6 @@
 frappe.ui.form.on("Tabby Payment Request", {
 	refresh(frm) {
-		if (frm.doc.status === "CLOSED") {
+		if (frm.doc.status === "CLOSED" || frm.doc.status === "PARTIAL REFUND") {
 			frm.add_custom_button(__("Refund"), () => {
 				frappe.confirm(__("Are you sure you want to refund in full?"), () => {
 					frm.call("refund").then(() => {

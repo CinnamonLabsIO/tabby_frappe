@@ -3,9 +3,9 @@
 
 frappe.ui.form.on("Tabby Settings", {
     refresh(frm) {
-        frm.add_custom_button(_("Register Webhook"), () => {
+        frm.add_custom_button(__("Register Webhook"), () => {
             let d = new frappe.ui.Dialog({
-                title: _("Register Webhook"),
+                title: __("Register Webhook"),
                 fields: [
                     {
                         label: "Base URL",
@@ -15,20 +15,20 @@ frappe.ui.form.on("Tabby Settings", {
                         default : `https://${frappe.boot.sitename}`
                     },
                     {
-                        label: _("Is Production Webhook?"),
-                        fieldname: _("is_production"),
+                        label: __("Is Production Webhook?"),
+                        fieldname: __("is_production"),
                         fieldtype: "Check"
                     }
                 ],
-                primary_action_label: _("Register"),
+                primary_action_label: __("Register"),
                 primary_action(values) {
-                    frappe.confirm(_("Are you sure you want to add this webhook?"), () => {
+                    frappe.confirm(__("Are you sure you want to add this webhook?"), () => {
                         frm.call("register_webhook", { 
                             site_url: values.base_url, 
                             is_production: values.is_production 
                         }).then(({ message }) => {
                             if (message !== "failed") {
-                                frappe.show_alert(_("Webhook Added"));
+                                frappe.show_alert(__("Webhook Added"));
                                 frm.refresh();
                             }
                         });

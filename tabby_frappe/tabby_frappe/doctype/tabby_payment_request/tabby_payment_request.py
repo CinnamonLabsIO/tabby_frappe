@@ -4,6 +4,7 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import flt
 
 
 class TabbyPaymentRequest(Document):
@@ -26,6 +27,7 @@ class TabbyPaymentRequest(Document):
 		customer_reference: DF.Data | None
 		ref_docname: DF.DynamicLink | None
 		ref_doctype: DF.Link | None
+		refund_amount: DF.Currency
 		refund_id: DF.Data | None
 		refunded_at: DF.Datetime | None
 		status: DF.Literal[
@@ -36,6 +38,7 @@ class TabbyPaymentRequest(Document):
 			"REJECTED",
 			"EXPIRED",
 			"FAILURE",
+			"PARTIAL REFUND",
 			"REFUND",
 		]
 		tabby_order_ref: DF.Data | None
@@ -97,47 +100,42 @@ class TabbyPaymentRequest(Document):
 
 	@frappe.whitelist()
 	def capture_payment(self):
-		response = self.tabby_settings.capture_payment(
-			self.tabby_payment_id, self.amount
-		)
-		status = response["status"]
-		self.status = status
-		self.save(ignore_permissions=True)
+		self.tabby_settings.capture_payment(self.tabby_payment_id, self.amount)
+		self.sync_status()
 
 	@frappe.whitelist()
 	def sync_status(self):
 		response = self.tabby_settings.get_order_status(self.tabby_payment_id)
 		frappe.errprint(response)
-		status = response["status"]
-		self.status = status
-
+		self.status = response["status"]
 		if response.get("refunds", []):
-			self.refund_id = response["refunds"][0]["id"]
+			self.refund_id = response["refunds"][-1]["id"]
 			self.refunded_at = frappe.utils.get_datetime_str(
-				response["refunds"][0]["created_at"]
+				response["refunds"][-1]["created_at"]
 			)
-			self.status = "REFUND"
+			total_refunded = sum(
+				flt(refund["amount"]) for refund in response["refunds"]
+			)
+			self.refund_amount = total_refunded
+			if self.amount > total_refunded:
+				self.status = "PARTIAL REFUND"
+			else:
+				self.status = "REFUND"
 
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
-	def refund(self):
-		# frappe.only_for("System Manager")
-
-		if self.status != "CLOSED":
+	def refund(self, amount: float | None = None):
+		if self.status == "REFUND":
+			self.sync_status()
+			return
+		if self.status not in ("CLOSED", "PARTIAL REFUND"):
 			frappe.throw(frappe._("Refunds can be made only on completed payments!"))
+		if not amount:
+			amount = self.amount - self.refund_amount
+		self.tabby_settings.refund_payment(self.tabby_payment_id, amount)
 
-		response = self.tabby_settings.refund_payment(
-			self.tabby_payment_id, self.amount
-		)
-
-		if len(response.get("refunds", [])):
-			self.refund_id = response["refunds"][0]["id"]
-			self.refunded_at = frappe.utils.get_datetime_str(
-				response["refunds"][0]["created_at"]
-			)
-			self.status = "REFUND"
-			self.save(ignore_permissions=True)
+		self.sync_status()
 
 
 # Todo implement webhook
@@ -151,9 +149,9 @@ class TabbyPaymentRequest(Document):
 
 
 def refund_payment_for_payment_entry(doc, event=None):
-	if doc.mode_of_payment != "Tabby":
+	if doc.mode_of_payment != "Tabby" or doc.payment_type != "Pay":
 		return
-
+	payment_amount = doc.paid_amount
 	frappe.get_doc(
 		"Tabby Payment Request", {"tabby_order_ref": doc.reference_no}
-	).refund()
+	).refund(payment_amount)
