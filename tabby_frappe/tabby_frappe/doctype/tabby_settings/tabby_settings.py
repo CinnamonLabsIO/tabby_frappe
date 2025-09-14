@@ -23,8 +23,9 @@ class TabbySettings(Document):
 
 		cancel_url: DF.Data | None
 		failure_url: DF.Data | None
-		key_id: DF.Data | None
-		key_secret: DF.Password | None
+		key_id: DF.Data
+		key_secret: DF.Password
+		merchant_code: DF.Data
 		success_url: DF.Data | None
 		webhook_secret: DF.Password | None
 	# end: auto-generated types
@@ -62,7 +63,7 @@ class TabbySettings(Document):
 				},
 			},
 			"lang": frappe.local.lang,
-			"merchant_code": "",
+			"merchant_code": self.merchant_code,
 			"merchant_urls": {
 				"success": get_local_lang_url(self.success_url),
 				"cancel": get_local_lang_url(self.cancel_url),
