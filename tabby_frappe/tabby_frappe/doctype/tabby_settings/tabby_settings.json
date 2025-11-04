@@ -10,6 +10,7 @@
   "webhook_secret",
   "column_break_njks",
   "key_secret",
+  "merchant_code",
   "endpoints_section",
   "success_url",
   "column_break_jwcn",
@@ -23,7 +24,9 @@
   {
    "fieldname": "key_id",
    "fieldtype": "Data",
-   "label": "Key ID"
+   "in_list_view": 1,
+   "label": "Key ID",
+   "reqd": 1
   },
   {
    "fieldname": "webhook_secret",
@@ -38,7 +41,9 @@
   {
    "fieldname": "key_secret",
    "fieldtype": "Password",
-   "label": "Key Secret"
+   "in_list_view": 1,
+   "label": "Key Secret",
+   "reqd": 1
   },
   {
    "fieldname": "tabby_keys_section",
@@ -95,6 +100,7 @@
    "options": "Tabby Webhook Endpoint"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
@@ -115,6 +121,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
