@@ -6,6 +6,7 @@ import frappe
 import requests
 from frappe.integrations.utils import (
 	create_request_log,
+	make_delete_request,
 	make_get_request,
 	make_post_request,
 )
@@ -21,11 +22,16 @@ class TabbySettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from tabby_frappe.tabby_frappe.doctype.tabby_webhook_endpoint.tabby_webhook_endpoint import (
+			TabbyWebhookEndpoint,
+		)
+
 		cancel_url: DF.Data | None
 		failure_url: DF.Data | None
 		key_id: DF.Data | None
 		key_secret: DF.Password | None
 		success_url: DF.Data | None
+		webhook_endpoints: DF.Table[TabbyWebhookEndpoint]
 		webhook_secret: DF.Password | None
 	# end: auto-generated types
 	pass
@@ -40,6 +46,7 @@ class TabbySettings(Document):
 		return {
 			"Authorization": f"Bearer {key_secret}",
 			"Content-Type": "application/json",
+			"X-Merchant-Code": self.merchant_code,
 		}
 
 	@frappe.whitelist()
@@ -97,27 +104,65 @@ class TabbySettings(Document):
 
 	@frappe.whitelist()
 	def register_webhook(self, site_url: str, is_production: bool):
-		frappe.only_for("System Manager")
-		url = self.base_url + "api/v1/webhooks"
+		url = f"{self.base_url}api/v1/webhooks"
 
+		if not self.webhook_secret:
+			self.webhook_secret = frappe.generate_hash(length=32)
+			self.save()
 		payload = {
-			"url": f"{site_url}/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.handle_tabby_webhook",
-			"is_test": not is_production,
-			"header": {"title": "string", "value": "string"},
+			"url": site_url.strip(),
+			"is_test": False if is_production else True,
+			"header": {
+				"title": "X-Webhook-Signature",
+				"value": f"{self.get_password('webhook_secret')}",
+			},
 		}
-		response = requests.post(url, headers=self.headers, json=payload)
-		response_status = "Completed" if response.status_code == 200 else "Failed"
+
+		response = make_post_request(url, headers=self.headers, json=payload)
+
+		self.retrieve_all_webhooks()
 		create_request_log(
-			data=payload,
-			service_name="Tabby Webhook",
-			output=response.json(),
-			status=response_status,
+			data={},
+			service_name="Register Tabby Webhook",
+			output=response,
+			status="Completed",
 			request_headers=self.headers,
 		)
-		if response_status == "Completed":
-			return "Webhook Registered"
-		else:
-			frappe.throw(response.json()["error"])
+
+	@frappe.whitelist()
+	def retrieve_all_webhooks(self):
+		url = f"{self.base_url}api/v1/webhooks"
+		response = make_get_request(url, headers=self.headers)
+		self.webhook_endpoints = []
+		for webhook in response:
+			self.append(
+				"webhook_endpoints",
+				{
+					"id": webhook.get("id"),
+					"endpoint": webhook.get("url"),
+				},
+			)
+		self.save()
+		create_request_log(
+			data={},
+			service_name="Retrieve Tabby Webhooks",
+			output=response,
+			status="Completed",
+			request_headers=self.headers,
+		)
+
+	@frappe.whitelist()
+	def delete_webhook(self, webhook_id: str):
+		url = f"{self.base_url}api/v1/webhooks/{webhook_id}"
+		response = make_delete_request(url, headers=self.headers)
+		create_request_log(
+			data={},
+			service_name="Delete Tabby Webhook",
+			output=response,
+			status="Completed",
+			request_headers=self.headers,
+		)
+		self.retrieve_all_webhooks()
 
 	def refund_payment(self, payment_id: str, amount: float):
 		url = f"{self.base_url}api/v2/payments/{payment_id}/refunds"
