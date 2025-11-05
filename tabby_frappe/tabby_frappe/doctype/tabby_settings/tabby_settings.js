@@ -26,11 +26,9 @@ frappe.ui.form.on("Tabby Settings", {
                         frm.call("register_webhook", { 
                             site_url: values.base_url, 
                             is_production: values.is_production 
-                        }).then(({ message }) => {
-                            if (message !== "failed") {
+                        }).then(() => {
+
                                 frappe.show_alert(__("Webhook Added"));
-                                frm.refresh();
-                            }
                         });
                         d.hide();  // Close the dialog
                     });
@@ -39,5 +37,27 @@ frappe.ui.form.on("Tabby Settings", {
 
             d.show();
         });
+
+            frm.add_custom_button(__("Retrieve Webhook"), () => {
+            frm.call("retrieve_all_webhooks").then(() => {
+                   frappe.show_alert(__("Webhooks Retrieved"));
+            });
+
+
+        });
     },
+});
+
+frappe.ui.form.on("Tabby Webhook Endpoint", {
+	delete: async function (frm, cdt, cdn) {
+		var d = frappe.get_doc(cdt, cdn);
+		const webhook_id = d.id;
+		const response = await frm.call({
+			method: "delete_webhook",
+			args: { webhook_id: webhook_id },
+			doc: frm.doc,
+		});
+        frappe.show_alert(__("Webhook Deleted"));
+        frm.refresh();
+	},
 });

@@ -16,7 +16,9 @@
   "column_break_jwcn",
   "failure_url",
   "column_break_nmlm",
-  "cancel_url"
+  "cancel_url",
+  "webhook_endpoint_section",
+  "webhook_endpoints"
  ],
  "fields": [
   {
@@ -29,7 +31,8 @@
   {
    "fieldname": "webhook_secret",
    "fieldtype": "Password",
-   "label": "Webhook Secret"
+   "label": "Webhook Secret",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_njks",
@@ -84,13 +87,24 @@
    "in_list_view": 1,
    "label": "Merchant Code",
    "reqd": 1
+  },
+  {
+   "fieldname": "webhook_endpoint_section",
+   "fieldtype": "Section Break",
+   "label": "Webhook Endpoint"
+  },
+  {
+   "fieldname": "webhook_endpoints",
+   "fieldtype": "Table",
+   "label": "Webhook Endpoints",
+   "options": "Tabby Webhook Endpoint"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-14 18:44:56.458807",
+ "modified": "2025-11-04 14:29:50.643180",
  "modified_by": "Administrator",
  "module": "Tabby Frappe",
  "name": "Tabby Settings",

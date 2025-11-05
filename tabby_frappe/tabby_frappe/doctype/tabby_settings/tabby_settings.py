@@ -6,10 +6,19 @@ import frappe
 import requests
 from frappe.integrations.utils import (
 	create_request_log,
+	make_delete_request,
 	make_get_request,
 	make_post_request,
 )
 from frappe.model.document import Document
+
+TABBY_WHITELISTED_IP = [
+	"34.166.36.90",
+	"34.166.35.211",
+	"34.166.34.222",
+	"34.166.37.207",
+	"34.93.76.191",
+]
 
 
 class TabbySettings(Document):
@@ -21,12 +30,17 @@ class TabbySettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from tabby_frappe.tabby_frappe.doctype.tabby_webhook_endpoint.tabby_webhook_endpoint import (
+			TabbyWebhookEndpoint,
+		)
+
 		cancel_url: DF.Data | None
 		failure_url: DF.Data | None
 		key_id: DF.Data
 		key_secret: DF.Password
 		merchant_code: DF.Data
 		success_url: DF.Data | None
+		webhook_endpoints: DF.Table[TabbyWebhookEndpoint]
 		webhook_secret: DF.Password | None
 	# end: auto-generated types
 	pass
@@ -41,6 +55,7 @@ class TabbySettings(Document):
 		return {
 			"Authorization": f"Bearer {key_secret}",
 			"Content-Type": "application/json",
+			"X-Merchant-Code": self.merchant_code,
 		}
 
 	@frappe.whitelist()
@@ -98,27 +113,65 @@ class TabbySettings(Document):
 
 	@frappe.whitelist()
 	def register_webhook(self, site_url: str, is_production: bool):
-		frappe.only_for("System Manager")
-		url = self.base_url + "api/v1/webhooks"
+		url = f"{self.base_url}api/v1/webhooks"
 
+		if not self.webhook_secret:
+			self.webhook_secret = frappe.generate_hash(length=32)
+			self.save()
 		payload = {
-			"url": f"{site_url}/api/v2/method/tabby_frappe.tabby_frappe.doctype.tabby_payment_request.tabby_payment_request.handle_tabby_webhook",
-			"is_test": not is_production,
-			"header": {"title": "string", "value": "string"},
+			"url": site_url.strip(),
+			"is_test": False if is_production else True,
+			"header": {
+				"title": "X-Webhook-Signature",
+				"value": f"{self.get_password('webhook_secret')}",
+			},
 		}
-		response = requests.post(url, headers=self.headers, json=payload)
-		response_status = "Completed" if response.status_code == 200 else "Failed"
+
+		response = make_post_request(url, headers=self.headers, json=payload)
+
+		self.retrieve_all_webhooks()
 		create_request_log(
-			data=payload,
-			service_name="Tabby Webhook",
-			output=response.json(),
-			status=response_status,
+			data={},
+			service_name="Register Tabby Webhook",
+			output=response,
+			status="Completed",
 			request_headers=self.headers,
 		)
-		if response_status == "Completed":
-			return "Webhook Registered"
-		else:
-			frappe.throw(response.json()["error"])
+
+	@frappe.whitelist()
+	def retrieve_all_webhooks(self):
+		url = f"{self.base_url}api/v1/webhooks"
+		response = make_get_request(url, headers=self.headers)
+		self.webhook_endpoints = []
+		for webhook in response:
+			self.append(
+				"webhook_endpoints",
+				{
+					"id": webhook.get("id"),
+					"endpoint": webhook.get("url"),
+				},
+			)
+		self.save()
+		create_request_log(
+			data={},
+			service_name="Retrieve Tabby Webhooks",
+			output=response,
+			status="Completed",
+			request_headers=self.headers,
+		)
+
+	@frappe.whitelist()
+	def delete_webhook(self, webhook_id: str):
+		url = f"{self.base_url}api/v1/webhooks/{webhook_id}"
+		response = make_delete_request(url, headers=self.headers)
+		create_request_log(
+			data={},
+			service_name="Delete Tabby Webhook",
+			output=response,
+			status="Completed",
+			request_headers=self.headers,
+		)
+		self.retrieve_all_webhooks()
 
 	def refund_payment(self, payment_id: str, amount: float):
 		url = f"{self.base_url}api/v2/payments/{payment_id}/refunds"
@@ -170,3 +223,30 @@ def get_local_lang_url(url: str) -> str:
 		return url.replace("/en/", "/ar/")
 
 	return url
+
+
+@frappe.whitelist(allow_guest=True)
+def tabby_webhook():
+	if frappe.local.request_ip not in TABBY_WHITELISTED_IP:
+		frappe.throw(frappe._(f"Unauthorized IP: {frappe.local.request_ip}"))
+
+	payload = frappe.local.form_dict
+	headers = frappe.local.request.headers
+
+	header_secret_key = headers.get("X-Webhook-Signature")
+	webhook_secret = frappe.get_single("Tabby Settings").get_password("webhook_secret")
+	if header_secret_key != webhook_secret:
+		frappe.throw(frappe._("Invalid Webhook Signature"))
+
+	frappe.get_doc(
+		{
+			"doctype": "Tabby Webhook Log",
+			"headers": frappe.as_json(headers),
+			"output": payload,
+			"status": payload.get("status"),
+		}
+	).insert(ignore_permissions=True)
+
+	frappe.local.response["http_status_code"] = 200
+	frappe.local.response["message"] = "Webhook received successfully"
+	return
