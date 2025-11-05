@@ -50,7 +50,7 @@ frappe.ui.form.on("Tabby Settings", {
 
 frappe.ui.form.on("Tabby Webhook Endpoint", {
 	delete: async function (frm, cdt, cdn) {
-		var d = locals[cdt][cdn];
+		var d = frappe.get_doc(cdt, cdn);
 		const webhook_id = d.id;
 		const response = await frm.call({
 			method: "delete_webhook",
