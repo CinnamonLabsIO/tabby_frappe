@@ -12,6 +12,14 @@ from frappe.integrations.utils import (
 )
 from frappe.model.document import Document
 
+TABBY_WHITELISTED_IP = [
+	"34.166.36.90",
+	"34.166.35.211",
+	"34.166.34.222",
+	"34.166.37.207",
+	"34.93.76.191",
+]
+
 
 class TabbySettings(Document):
 	# begin: auto-generated types
@@ -215,3 +223,30 @@ def get_local_lang_url(url: str) -> str:
 		return url.replace("/en/", "/ar/")
 
 	return url
+
+
+@frappe.whitelist(allow_guest=True)
+def tabby_webhook():
+	if frappe.local.request_ip not in TABBY_WHITELISTED_IP:
+		frappe.throw(frappe._(f"Unauthorized IP: {frappe.local.request_ip}"))
+
+	payload = frappe.local.form_dict
+	headers = frappe.local.request.headers
+
+	header_secret_key = headers.get("X-Webhook-Signature")
+	webhook_secret = frappe.get_single("Tabby Settings").get_password("webhook_secret")
+	if header_secret_key != webhook_secret:
+		frappe.throw(frappe._("Invalid Webhook Signature"))
+
+	frappe.get_doc(
+		{
+			"doctype": "Tabby Webhook Log",
+			"headers": frappe.as_json(headers),
+			"output": payload,
+			"status": payload.get("status"),
+		}
+	).insert(ignore_permissions=True)
+
+	frappe.local.response["http_status_code"] = 200
+	frappe.local.response["message"] = "Webhook received successfully"
+	return
